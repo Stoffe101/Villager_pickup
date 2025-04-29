@@ -9,6 +9,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -19,11 +20,43 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.component.DataComponentTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.component.DataComponentTypes;
 
 import java.util.List;
+import java.util.Optional;
+
+package com.example.villager_pickup.item;
+
+import com.example.villager_pickup.Villager_pickup;
+import com.example.villager_pickup.component.VillagerComponents;
+import com.example.villager_pickup.component.VillagerData;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Custom item for capturing and placing villagers.
@@ -84,7 +117,7 @@ public class VillagerItem extends Item {
             );
             
             // Apply stored data
-            VillagerData villagerData = VillagerComponents.VILLAGER_DATA.get(stack);
+            VillagerData villagerData = VillagerComponents.getVillagerData(stack);
             boolean dataApplied = false;
             
             if (villagerData.hasData()) {
@@ -93,9 +126,10 @@ public class VillagerItem extends Item {
             }
             
             // Apply custom name if available and no other data was applied
-            if (!dataApplied && stack.hasCustomName()) {
-                villager.setCustomName(stack.getName());
-                LOGGER.debug("Applied custom name: {}", stack.getName().getString());
+            Optional<Text> customName = stack.get(DataComponentTypes.CUSTOM_NAME);
+            if (!dataApplied && customName.isPresent()) {
+                villager.setCustomName(customName.get());
+                LOGGER.debug("Applied custom name: {}", customName.get().getString());
             }
             
             // Spawn the villager
@@ -141,14 +175,14 @@ public class VillagerItem extends Item {
     @Override
     public boolean hasGlint(ItemStack stack) {
         // Add enchantment glint for items with villager data
-        VillagerData data = VillagerComponents.VILLAGER_DATA.get(stack);
+        VillagerData data = VillagerComponents.getVillagerData(stack);
         return data.hasData();
     }
     
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType type) {
         // Only add basic tooltip here - detailed tooltips are added by the client event
-        if (!VillagerComponents.VILLAGER_DATA.get(stack).hasData()) {
+        if (!VillagerComponents.getVillagerData(stack).hasData()) {
             tooltip.add(Text.translatable("tooltip.villager_pickup.right_click_to_place")
                     .formatted(Formatting.ITALIC, Formatting.DARK_GRAY));
         }

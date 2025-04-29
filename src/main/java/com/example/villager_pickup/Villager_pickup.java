@@ -5,11 +5,14 @@ import com.example.villager_pickup.component.VillagerData;
 import com.example.villager_pickup.item.VillagerItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,7 +31,7 @@ public class Villager_pickup implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     
     // Create our villager item with spawn egg appearance
-    public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new FabricItemSettings().maxCount(1));
+    public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new Item.Settings().maxCount(1));
     
     @Override
     public void onInitialize() {
@@ -38,7 +41,7 @@ public class Villager_pickup implements ModInitializer {
         VillagerComponents.register();
         
         // Register the villager item using a new Identifier
-        Registry.register(Registries.ITEM, new Identifier(MOD_ID, "captured_villager"), VILLAGER_ITEM);
+        Registry.register(Registries.ITEM, Identifier.of(MOD_ID, "captured_villager"), VILLAGER_ITEM);
         
         // Add to the Spawn Eggs group instead of Tools
         try {
@@ -68,14 +71,14 @@ public class Villager_pickup implements ModInitializer {
                         ItemStack villagerItem = VILLAGER_ITEM.getDefaultStack();
                         
                         // Get the component and store the villager data
-                        VillagerData data = VillagerComponents.VILLAGER_DATA.get(villagerItem);
+                        VillagerData data = VillagerComponents.getVillagerData(villagerItem);
                         data.storeFrom(villager);
                         
                         // Set the item name based on the villager profession
                         String profession = villager.getVillagerData().getProfession().toString();
                         String displayName = formatProfessionName(profession);
                         // Create custom name for display
-                        villagerItem.setCustomName(Text.literal(displayName));
+                        villagerItem.set(DataComponentTypes.CUSTOM_NAME, Text.literal(displayName));
                         
                         // Give the item to the player and remove the villager
                         player.setStackInHand(hand, villagerItem);

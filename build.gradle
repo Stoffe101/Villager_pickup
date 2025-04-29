@@ -1,13 +1,13 @@
 plugins {
-    id 'fabric-loom' version '1.10.5'
+    id 'fabric-loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
 }
 
-version = project.mod_version
-group = project.maven_group
+group = 'com.example.villager_pickup'
+version = '1.0.0'
 
 base {
-    archivesName = project.archives_base_name
+    archivesName = "villager_pickup"
 }
 
 loom {
@@ -27,23 +27,14 @@ tasks.withType(Jar).configureEach {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
     mavenCentral()
-    maven {
+    maven { 
         name = "Fabric"
-        url = "https://maven.fabricmc.net/"
+        url = "https://maven.fabricmc.net/" 
     }
-    maven {
+    maven { 
         name = "Mojang"
         url = "https://libraries.minecraft.net/"
-    }
-    maven {
-        name = "Architectury"
-        url = "https://maven.architectury.dev/"
-    }
-    maven {
-        name = "TerraformersMC"
-        url = "https://maven.terraformersmc.com/"
     }
     // Add Cardinal Components repository
     maven {
@@ -52,38 +43,47 @@ repositories {
     }
 }
 
+repositories {
+    maven {
+        name = "Ladysnake Mods"
+        url = "https://maven.ladysnake.org/releases"
+    }
+    // Add repositories to get dependencies from
+    maven {
+        name = "Fabric"
+        url = "https://maven.fabricmc.net/"
+    }
+    maven {
+        name = "CurseForge"
+        url = "https://cursemaven.com"
+    }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+    }
+    mavenCentral()
+}
+
 dependencies {
     // Core dependencies
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Use the full Fabric API instead of individual modules
-    // This is much more reliable for compatibility
+    // Use the full Fabric API
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    
-    // Architectury API
-    modImplementation "dev.architectury:architectury-fabric:${project.architectury_version}"
-    
-    // Cardinal Components API
-    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
-    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-entity:${project.cca_version}"
-    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-item:${project.cca_version}"
-    include "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
-    include "dev.onyxstudios.cardinal-components-api:cardinal-components-entity:${project.cca_version}"
-    include "dev.onyxstudios.cardinal-components-api:cardinal-components-item:${project.cca_version}"
 }
 
 processResources {
     inputs.property "version", project.version
-    inputs.property "minecraft_version", project.minecraft_version
-    inputs.property "loader_version", project.loader_version
+    inputs.property "minecraft_version", "1.21.4"
+    inputs.property "loader_version", "0.16.13"
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
-                "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version
+                "minecraft_version": "1.21.4",
+                "loader_version": "0.16.13"
     }
 }
 
@@ -113,7 +113,7 @@ jar {
 publishing {
     publications {
         create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
+            artifactId = "villager_pickup"
             from components.java
         }
     }

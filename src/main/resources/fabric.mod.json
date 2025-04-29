@@ -23,8 +23,15 @@
     ],
     "cardinal-components-item": [
       "com.example.villager_pickup.component.VillagerComponents"
+    ],
+    "fabric-datagen": [
+      "com.example.villager_pickup.client.Villager_pickupDataGenerator"
     ]
   },
+      "mixins": [
+    "villager_pickup.mixins.json",
+    "villager_pickup.client.mixins.json"
+      ],
   "mixins": [
     "villager_pickup.mixins.json",
     {

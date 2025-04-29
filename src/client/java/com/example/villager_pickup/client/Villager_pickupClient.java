@@ -8,13 +8,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.minecraft.item.Item;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.item.tooltip.TooltipContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-
 import java.util.List;
 
 @Environment(EnvType.CLIENT)
@@ -35,7 +34,7 @@ public class Villager_pickupClient implements ClientModInitializer {
             // Only process our villager item
             if (stack.getItem() instanceof VillagerItem) {
                 // Get the component data
-                VillagerData data = VillagerComponents.VILLAGER_DATA.get(stack);
+                VillagerData data = VillagerComponents.getVillagerData(stack);
                 
                 if (data.hasData()) {
                     // Add separation line
@@ -43,26 +42,28 @@ public class Villager_pickupClient implements ClientModInitializer {
                     
                     // Extract villager information from the component
                     try {
-                        // Try to get profession data
-                        NbtCompound nbt = stack.getOrCreateNbt();
-                        if (nbt.contains("EntityData") && nbt.getCompound("EntityData").contains("VillagerData")) {
-                            NbtCompound entityData = nbt.getCompound("EntityData");
-                            NbtCompound villagerData = entityData.getCompound("VillagerData");
-                            
-                            // Get profession and level
-                            String professionId = villagerData.getString("profession");
-                            int level = villagerData.getInt("level");
-                            
-                            // Format profession name
-                            String profession = formatProfessionName(professionId);
-                            
-                            // Add profession and level information
-                            lines.add(Text.translatable("tooltip.villager_pickup.profession", profession)
-                                    .formatted(Formatting.GRAY));
-                            
-                            if (level > 0) {
-                                lines.add(Text.translatable("tooltip.villager_pickup.level", level)
+                        // Try to get profession data using Data Components
+                        NbtCompound customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+                        if (customData != null && customData.contains("EntityData")) {
+                            NbtCompound entityData = customData.getCompound("EntityData");
+                            if (entityData.contains("VillagerData")) {
+                                NbtCompound villagerData = entityData.getCompound("VillagerData");
+                                
+                                // Get profession and level
+                                String professionId = villagerData.getString("profession");
+                                int level = villagerData.getInt("level");
+                                
+                                // Format profession name
+                                String profession = formatProfessionName(professionId);
+                                
+                                // Add profession and level information
+                                lines.add(Text.translatable("tooltip.villager_pickup.profession", profession)
                                         .formatted(Formatting.GRAY));
+                                
+                                if (level > 0) {
+                                    lines.add(Text.translatable("tooltip.villager_pickup.level", level)
+                                            .formatted(Formatting.GRAY));
+                                }
                             }
                         }
                         
@@ -71,7 +72,7 @@ public class Villager_pickupClient implements ClientModInitializer {
                                 .formatted(Formatting.ITALIC, Formatting.DARK_GRAY));
                         
                     } catch (Exception e) {
-                        // Fallback if there's an error reading NBT
+                        // Fallback if there's an error reading data
                         lines.add(Text.translatable("tooltip.villager_pickup.contains_villager")
                                 .formatted(Formatting.GRAY));
                     }

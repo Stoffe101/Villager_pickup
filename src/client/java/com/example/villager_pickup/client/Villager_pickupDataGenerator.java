@@ -3,6 +3,11 @@ package com.example.villager_pickup.client;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 
+package com.example.villager_pickup.client;
+
+import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
+
 public class Villager_pickupDataGenerator implements DataGeneratorEntrypoint {
 
     @Override
