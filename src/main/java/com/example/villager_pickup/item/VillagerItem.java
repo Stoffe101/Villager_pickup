@@ -1,12 +1,14 @@
 package com.example.villager_pickup.item;
 
+import com.example.villager_pickup.Villager_pickup;
+import net.minecraft.component.type.StringComponent;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -38,40 +40,50 @@ public class VillagerItem extends Item {
             placePos = pos.offset(direction);
         }
 
-        // Get NBT data if it exists
-        NbtCompound nbt = stack.hasNbt() ? stack.getNbt() : null;
-        
-        // Check if item has our custom villager data
-        if (nbt != null && nbt.contains("VillagerData")) {
-            // Create a new villager entity using COMMAND spawn reason (replaced SPAWN_EGG)
-            VillagerEntity villager = EntityType.VILLAGER.create(world, placePos, SpawnReason.COMMAND);
-            
-            if (villager != null) {
-                // Load the saved data into the villager
-                villager.readNbt(nbt.getCompound("VillagerData"));
-                
-                // Position the villager
-                villager.refreshPositionAndAngles(
-                    placePos.getX() + 0.5, 
-                    placePos.getY(), 
-                    placePos.getZ() + 0.5, 
-                    0, 0
-                );
-                
-                // Spawn the villager in the world
-                world.spawnEntityAndPassengers(villager);
-                
-                // Inform player
-                if (context.getPlayer() != null) {
-                    context.getPlayer().sendMessage(Text.of("Villager placed!"), true);
+        // Check if the item has our villager data component
+        if (stack.contains(Villager_pickup.VILLAGER_DATA)) {
+            try {
+                // Get villager data from component
+                StringComponent dataComponent = stack.get(Villager_pickup.VILLAGER_DATA);
+                if (dataComponent != null) {
+                    String villagerDataStr = dataComponent.value();
+                    
+                    // Convert stored string back to NBT
+                    NbtCompound villagerNbt = StringNbtReader.parse(villagerDataStr);
+                    
+                    // Create a new villager entity
+                    VillagerEntity villager = new VillagerEntity(EntityType.VILLAGER, world);
+                    
+                    // Apply the saved villager data
+                    villager.readNbt(villagerNbt);
+                    
+                    // Position the villager
+                    villager.refreshPositionAndAngles(
+                        placePos.getX() + 0.5, 
+                        placePos.getY(), 
+                        placePos.getZ() + 0.5, 
+                        0, 0
+                    );
+                    
+                    // Spawn the villager in the world
+                    world.spawnEntity(villager);
+                    
+                    // Inform player
+                    if (context.getPlayer() != null) {
+                        context.getPlayer().sendMessage(Text.of("Villager placed!"), true);
+                    }
+                    
+                    // Remove the item if not in creative mode
+                    if (context.getPlayer() != null && !context.getPlayer().getAbilities().creativeMode) {
+                        stack.decrement(1);
+                    }
+                    
+                    return ActionResult.CONSUME;
                 }
-                
-                // Remove the item if not in creative mode
-                if (context.getPlayer() != null && !context.getPlayer().getAbilities().creativeMode) {
-                    stack.decrement(1);
-                }
-                
-                return ActionResult.CONSUME;
+            } catch (Exception e) {
+                // Log error but don't crash
+                System.err.println("Error placing villager: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         

@@ -4,6 +4,9 @@ import com.example.villager_pickup.item.VillagerItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.component.DataComponentType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.StringComponent;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -21,6 +24,15 @@ import org.slf4j.LoggerFactory;
 public class Villager_pickup implements ModInitializer {
     public static final String MOD_ID = "villager_pickup";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    
+    // Register a custom data component type to store villager data
+    public static final DataComponentType<StringComponent> VILLAGER_DATA = DataComponentTypes.register(
+        Identifier.of(MOD_ID, "villager_data"), StringComponent.CODEC
+    );
+    
+    public static final DataComponentType<StringComponent> VILLAGER_PROFESSION = DataComponentTypes.register(
+        Identifier.of(MOD_ID, "villager_profession"), StringComponent.CODEC
+    );
     
     // Create an item with vanilla settings
     public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new Item.Settings().maxCount(1));
@@ -60,46 +72,27 @@ public class Villager_pickup implements ModInitializer {
                         NbtCompound villagerNbt = new NbtCompound();
                         entity.saveSelfNbt(villagerNbt);
                         
+                        // Convert NBT to string for storage in component
+                        String villagerDataStr = villagerNbt.toString();
+                        
                         ItemStack villagerItem = VILLAGER_ITEM.getDefaultStack();
                         
                         // Add villager profession as custom data
                         if (villager.getVillagerData().getProfession() != null) {
                             String profession = villager.getVillagerData().getProfession().toString();
                             
-                            // Create or get NBT
-                            NbtCompound itemNbt = new NbtCompound();
-                            if (villagerItem.hasNbt()) {
-                                itemNbt = villagerItem.getNbt().copy();
-                            }
+                            // Set custom name using the component system
+                            villagerItem.set(DataComponentTypes.CUSTOM_NAME, Text.of(profession + " Villager"));
                             
-                            // Add display name
-                            NbtCompound displayNbt = new NbtCompound();
-                            displayNbt.putString("Name", Text.Serialization.toJson(Text.of(profession + " Villager")));
-                            itemNbt.put("display", displayNbt);
-                            
-                            // Store villager data
-                            itemNbt.put("VillagerData", villagerNbt);
-                            itemNbt.putString("CustomProfession", profession);
-                            
-                            // Set NBT
-                            villagerItem.setNbt(itemNbt);
+                            // Store villager data in custom components
+                            villagerItem.set(VILLAGER_DATA, StringComponent.of(villagerDataStr));
+                            villagerItem.set(VILLAGER_PROFESSION, StringComponent.of(profession));
                         } else {
-                            // Create or get NBT
-                            NbtCompound itemNbt = new NbtCompound();
-                            if (villagerItem.hasNbt()) {
-                                itemNbt = villagerItem.getNbt().copy();
-                            }
+                            // Set custom name using the component system
+                            villagerItem.set(DataComponentTypes.CUSTOM_NAME, Text.of("Captured Villager"));
                             
-                            // Add display name
-                            NbtCompound displayNbt = new NbtCompound();
-                            displayNbt.putString("Name", Text.Serialization.toJson(Text.of("Captured Villager")));
-                            itemNbt.put("display", displayNbt);
-                            
-                            // Store villager data
-                            itemNbt.put("VillagerData", villagerNbt);
-                            
-                            // Set NBT
-                            villagerItem.setNbt(itemNbt);
+                            // Store villager data in custom component
+                            villagerItem.set(VILLAGER_DATA, StringComponent.of(villagerDataStr));
                         }
                         
                         // Give the item to the player and remove the villager
@@ -116,9 +109,9 @@ public class Villager_pickup implements ModInitializer {
             
             LOGGER.info("Successfully registered entity interaction handler");
         } catch (Exception e) {
-            // Use constant strings for logging
-            LOGGER.error("Failed to register entity interaction");
+            LOGGER.error("Failed to register entity interaction: " + e.getMessage());
             LOGGER.error("Mod will not function correctly");
+            e.printStackTrace();
         }
     }
 }
