@@ -1,14 +1,12 @@
 package com.example.villager_pickup.item;
 
 import com.example.villager_pickup.Villager_pickup;
-import net.minecraft.component.type.StringComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -40,16 +38,15 @@ public class VillagerItem extends Item {
             placePos = pos.offset(direction);
         }
 
-        // Check if the item has our villager data component
-        if (stack.contains(Villager_pickup.VILLAGER_DATA)) {
-            try {
-                // Get villager data from component
-                StringComponent dataComponent = stack.get(Villager_pickup.VILLAGER_DATA);
-                if (dataComponent != null) {
-                    String villagerDataStr = dataComponent.value();
-                    
-                    // Convert stored string back to NBT
-                    NbtCompound villagerNbt = StringNbtReader.parse(villagerDataStr);
+        try {
+            // Check if the item has NBT data
+            if (stack.hasNbt()) {
+                NbtCompound itemNbt = stack.getNbt();
+                
+                // Check for our custom villager data
+                if (itemNbt != null && itemNbt.contains(Villager_pickup.VILLAGER_DATA_KEY)) {
+                    // Get the saved villager data
+                    NbtCompound villagerNbt = itemNbt.getCompound(Villager_pickup.VILLAGER_DATA_KEY);
                     
                     // Create a new villager entity
                     VillagerEntity villager = new VillagerEntity(EntityType.VILLAGER, world);
@@ -80,11 +77,11 @@ public class VillagerItem extends Item {
                     
                     return ActionResult.CONSUME;
                 }
-            } catch (Exception e) {
-                // Log error but don't crash
-                System.err.println("Error placing villager: " + e.getMessage());
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            // Log error but don't crash
+            System.err.println("Error placing villager: " + e.getMessage());
+            e.printStackTrace();
         }
         
         return ActionResult.PASS;

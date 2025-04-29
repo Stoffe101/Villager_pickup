@@ -4,9 +4,6 @@ import com.example.villager_pickup.item.VillagerItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.component.DataComponentType;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.StringComponent;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -25,14 +22,9 @@ public class Villager_pickup implements ModInitializer {
     public static final String MOD_ID = "villager_pickup";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     
-    // Register a custom data component type to store villager data
-    public static final DataComponentType<StringComponent> VILLAGER_DATA = DataComponentTypes.register(
-        Identifier.of(MOD_ID, "villager_data"), StringComponent.CODEC
-    );
-    
-    public static final DataComponentType<StringComponent> VILLAGER_PROFESSION = DataComponentTypes.register(
-        Identifier.of(MOD_ID, "villager_profession"), StringComponent.CODEC
-    );
+    // Keys for NBT data
+    public static final String VILLAGER_DATA_KEY = "VillagerEntityData";
+    public static final String VILLAGER_PROFESSION_KEY = "VillagerProfession";
     
     // Create an item with vanilla settings
     public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new Item.Settings().maxCount(1));
@@ -72,28 +64,34 @@ public class Villager_pickup implements ModInitializer {
                         NbtCompound villagerNbt = new NbtCompound();
                         entity.saveSelfNbt(villagerNbt);
                         
-                        // Convert NBT to string for storage in component
-                        String villagerDataStr = villagerNbt.toString();
-                        
                         ItemStack villagerItem = VILLAGER_ITEM.getDefaultStack();
+                        
+                        // Create item NBT
+                        NbtCompound itemNbt = new NbtCompound();
+                        
+                        // Store villager data
+                        itemNbt.put(VILLAGER_DATA_KEY, villagerNbt);
                         
                         // Add villager profession as custom data
                         if (villager.getVillagerData().getProfession() != null) {
                             String profession = villager.getVillagerData().getProfession().toString();
                             
-                            // Set custom name using the component system
-                            villagerItem.set(DataComponentTypes.CUSTOM_NAME, Text.of(profession + " Villager"));
+                            // Store profession
+                            itemNbt.putString(VILLAGER_PROFESSION_KEY, profession);
                             
-                            // Store villager data in custom components
-                            villagerItem.set(VILLAGER_DATA, StringComponent.of(villagerDataStr));
-                            villagerItem.set(VILLAGER_PROFESSION, StringComponent.of(profession));
+                            // Add display name
+                            NbtCompound displayNbt = new NbtCompound();
+                            displayNbt.putString("Name", "{\"text\":\"" + profession + " Villager\"}");
+                            itemNbt.put("display", displayNbt);
                         } else {
-                            // Set custom name using the component system
-                            villagerItem.set(DataComponentTypes.CUSTOM_NAME, Text.of("Captured Villager"));
-                            
-                            // Store villager data in custom component
-                            villagerItem.set(VILLAGER_DATA, StringComponent.of(villagerDataStr));
+                            // Add display name for generic villager
+                            NbtCompound displayNbt = new NbtCompound();
+                            displayNbt.putString("Name", "{\"text\":\"Captured Villager\"}");
+                            itemNbt.put("display", displayNbt);
                         }
+                        
+                        // Apply NBT to item
+                        villagerItem.setNbt(itemNbt);
                         
                         // Give the item to the player and remove the villager
                         player.setStackInHand(hand, villagerItem);
