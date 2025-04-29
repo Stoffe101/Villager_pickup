@@ -1,0 +1,10 @@
+{
+  "components": [
+    "villager_pickup:villager_data"
+  ],
+  "items": {
+    "villager_pickup:villager_data": [
+      "villager_pickup:captured_villager"
+    ]
+  }
+}

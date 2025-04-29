@@ -4,8 +4,10 @@
   "package": "com.example.villager_pickup.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "SpawnEggColorsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "refmap": "villager_pickup.refmap.json"
 }

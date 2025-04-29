@@ -1,14 +1,12 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.example.villager_pickup.mixin",
+  "package": "com.example.villager_pickup.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-  ],
   "client": [
   ],
   "injectors": {
     "defaultRequire": 1
   },
-  "refmap": "villager_pickup.refmap.json"
+  "refmap": "villager_pickup.client-refmap.json"
 }

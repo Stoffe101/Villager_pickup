@@ -20,6 +20,9 @@
     ],
     "main": [
       "com.example.villager_pickup.Villager_pickup"
+    ],
+    "cardinal-components-item": [
+      "com.example.villager_pickup.component.VillagerComponents"
     ]
   },
   "mixins": [
@@ -33,6 +36,14 @@
     "fabricloader": ">=${loader_version}",
     "minecraft": "~1.21.4",
     "java": ">=21",
-    "fabric-api": "*"
+    "fabric-api": "*",
+    "architectury": ">=11.0.0",
+    "cardinal-components-base": ">=5.0.0",
+    "cardinal-components-item": ">=5.0.0"
+  },
+  "custom": {
+    "cardinal-components": [
+      "villager_pickup:villager_data"
+    ]
   }
 }

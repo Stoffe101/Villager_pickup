@@ -1,18 +1,23 @@
 package com.example.villager_pickup;
 
+import com.example.villager_pickup.component.VillagerComponents;
+import com.example.villager_pickup.component.VillagerData;
 import com.example.villager_pickup.item.VillagerItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -22,27 +27,26 @@ public class Villager_pickup implements ModInitializer {
     public static final String MOD_ID = "villager_pickup";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     
-    // Keys for NBT data
-    public static final String VILLAGER_DATA_KEY = "VillagerEntityData";
-    public static final String VILLAGER_PROFESSION_KEY = "VillagerProfession";
-    
-    // Create an item with vanilla settings
-    public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new Item.Settings().maxCount(1));
+    // Create our villager item with spawn egg appearance
+    public static final VillagerItem VILLAGER_ITEM = new VillagerItem(new FabricItemSettings().maxCount(1));
     
     @Override
     public void onInitialize() {
         LOGGER.info("Initializing Villager Pickup Mod");
         
-        // Register the villager item using a new Identifier
-        Registry.register(Registries.ITEM, Identifier.of(MOD_ID, "captured_villager"), VILLAGER_ITEM);
+        // Register components
+        VillagerComponents.register();
         
-        // Add to a Tools group using Fabric API
+        // Register the villager item using a new Identifier
+        Registry.register(Registries.ITEM, new Identifier(MOD_ID, "captured_villager"), VILLAGER_ITEM);
+        
+        // Add to the Spawn Eggs group instead of Tools
         try {
-            ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(content -> content.add(VILLAGER_ITEM));
-            LOGGER.info("Successfully added Villager item to Tools group");
+            ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(content -> content.add(VILLAGER_ITEM));
+            LOGGER.info("Successfully added Villager item to Spawn Eggs group");
         } catch (Exception e) {
             // Use constant strings for logging
-            LOGGER.warn("Could not add item to Tools group");
+            LOGGER.warn("Could not add item to Spawn Eggs group");
             LOGGER.info("Item will still be available by search in creative inventory");
         }
         
@@ -60,45 +64,54 @@ public class Villager_pickup implements ModInitializer {
                 
                 if (entity instanceof VillagerEntity villager) {
                     if (player.getStackInHand(hand).isEmpty()) {
-                        // Create an item stack with the villager data
-                        NbtCompound villagerNbt = new NbtCompound();
-                        entity.saveSelfNbt(villagerNbt);
-                        
+                        // Create a villager item
                         ItemStack villagerItem = VILLAGER_ITEM.getDefaultStack();
                         
-                        // Create item NBT
-                        NbtCompound itemNbt = new NbtCompound();
+                        // Get the component and store the villager data
+                        VillagerData data = VillagerComponents.VILLAGER_DATA.get(villagerItem);
+                        data.storeFrom(villager);
                         
-                        // Store villager data
-                        itemNbt.put(VILLAGER_DATA_KEY, villagerNbt);
-                        
-                        // Add villager profession as custom data
-                        if (villager.getVillagerData().getProfession() != null) {
-                            String profession = villager.getVillagerData().getProfession().toString();
-                            
-                            // Store profession
-                            itemNbt.putString(VILLAGER_PROFESSION_KEY, profession);
-                            
-                            // Add display name
-                            NbtCompound displayNbt = new NbtCompound();
-                            displayNbt.putString("Name", "{\"text\":\"" + profession + " Villager\"}");
-                            itemNbt.put("display", displayNbt);
-                        } else {
-                            // Add display name for generic villager
-                            NbtCompound displayNbt = new NbtCompound();
-                            displayNbt.putString("Name", "{\"text\":\"Captured Villager\"}");
-                            itemNbt.put("display", displayNbt);
-                        }
-                        
-                        // Apply NBT to item
-                        villagerItem.setNbt(itemNbt);
+                        // Set the item name based on the villager profession
+                        String profession = villager.getVillagerData().getProfession().toString();
+                        String displayName = formatProfessionName(profession);
+                        // Create custom name for display
+                        villagerItem.setCustomName(Text.literal(displayName));
                         
                         // Give the item to the player and remove the villager
                         player.setStackInHand(hand, villagerItem);
+                        
+                        // Play a sound effect
+                        world.playSound(
+                            null, 
+                            player.getBlockPos(), 
+                            SoundEvents.ENTITY_VILLAGER_HURT, 
+                            SoundCategory.NEUTRAL, 
+                            1.0F, 
+                            1.0F
+                        );
+                        
+                        // Remove the villager
                         entity.discard();
                         
-                        player.sendMessage(Text.of("Villager picked up!"), true);
+                        // Send success message with formatting
+                        if (player instanceof ServerPlayerEntity serverPlayer) {
+                            serverPlayer.sendMessage(
+                                Text.translatable("message.villager_pickup.picked_up", displayName)
+                                    .formatted(Formatting.GREEN), 
+                                true
+                            );
+                        }
+                        
                         return ActionResult.SUCCESS;
+                    } else {
+                        // Let the player know their hand needs to be empty
+                        if (player instanceof ServerPlayerEntity serverPlayer) {
+                            serverPlayer.sendMessage(
+                                Text.translatable("message.villager_pickup.hand_must_be_empty")
+                                    .formatted(Formatting.RED), 
+                                true
+                            );
+                        }
                     }
                 }
                 
@@ -111,5 +124,32 @@ public class Villager_pickup implements ModInitializer {
             LOGGER.error("Mod will not function correctly");
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * Formats a profession identifier into a readable display name.
+     * 
+     * @param profession The profession identifier (e.g. "minecraft:farmer")
+     * @return A formatted display name (e.g. "Farmer Villager")
+     */
+    private static String formatProfessionName(String profession) {
+        if (profession.equals("minecraft:none")) {
+            return "Villager";
+        }
+        
+        String cleanProfession = profession.replace("minecraft:", "").replace("_", " ");
+        
+        // Capitalize first letter of each word
+        String[] words = cleanProfession.split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                sb.append(Character.toUpperCase(word.charAt(0)))
+                  .append(word.substring(1))
+                  .append(" ");
+            }
+        }
+        
+        return sb.toString().trim() + " Villager";
     }
 }
