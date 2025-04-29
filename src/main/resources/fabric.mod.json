@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "villager_pickup",
+  "version": "${version}",
+  "name": "Villager Pickup",
+  "description": "A mod that allows you to pick up villagers by shift-right-clicking them, and place them back with all their trades intact",
+  "authors": [
+    "YourName"
+  ],
+  "contact": {
+    "homepage": "https://example.com/",
+    "sources": "https://github.com/yourusername/villager_pickup"
+  },
+  "license": "MIT",
+  "icon": "assets/villager_pickup/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.example.villager_pickup.client.Villager_pickupClient"
+    ],
+    "main": [
+      "com.example.villager_pickup.Villager_pickup"
+    ]
+  },
+  "mixins": [
+    "villager_pickup.mixins.json",
+    {
+      "config": "villager_pickup.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
